@@ -1,0 +1,22 @@
+-- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_employees_user_id ON employees(user_id);
+CREATE INDEX IF NOT EXISTS idx_employees_department_id ON employees(department_id);
+CREATE INDEX IF NOT EXISTS idx_employees_position_id ON employees(position_id);
+CREATE INDEX IF NOT EXISTS idx_employees_manager_id ON employees(manager_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_employee_id ON attendance(employee_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_employee_id ON leave_requests(employee_id);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_leave_type_id ON leave_requests(leave_type_id);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_status ON leave_requests(status);
+CREATE INDEX IF NOT EXISTS idx_employee_salaries_employee_id ON employee_salaries(employee_id);
+CREATE INDEX IF NOT EXISTS idx_employee_salaries_salary_component_id ON employee_salaries(salary_component_id);
+CREATE INDEX IF NOT EXISTS idx_tax_brackets_country ON tax_brackets(country);
+CREATE INDEX IF NOT EXISTS idx_tax_brackets_tax_year ON tax_brackets(tax_year);
+CREATE INDEX IF NOT EXISTS idx_payroll_details_payroll_id ON payroll_details(payroll_id);
+CREATE INDEX IF NOT EXISTS idx_payroll_details_employee_id ON payroll_details(employee_id);
+CREATE INDEX IF NOT EXISTS idx_payslips_employee_id ON payslips(employee_id);
+CREATE INDEX IF NOT EXISTS idx_payslips_payroll_id ON payslips(payroll_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_documents_employee_id ON documents(employee_id);
+CREATE INDEX IF NOT EXISTS idx_performance_reviews_employee_id ON performance_reviews(employee_id);
+CREATE INDEX IF NOT EXISTS idx_performance_reviews_reviewer_id ON performance_reviews(reviewer_id);

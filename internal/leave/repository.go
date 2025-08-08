@@ -1,6 +1,7 @@
 package leave
 
 import (
+	"database/sql"
 	"employee-management/internal/database"
 	"employee-management/internal/models"
 	"errors"
@@ -108,28 +109,46 @@ func (r *repository) DeleteLeaveType(id uuid.UUID) error {
 
 func (r *repository) CreateLeaveRequest(leaveRequestData *models.LeaveRequestCreate) (*models.LeaveRequest, error) {
 	var leaveRequest models.LeaveRequest
+	var approvedAt sql.NullTime
 	query := `INSERT INTO leave_requests (employee_id, leave_type_id, start_date, end_date, reason)
 			  VALUES ($1, $2, $3, $4, $5)
 			  RETURNING id, employee_id, leave_type_id, start_date, end_date, reason, status, approved_by, approved_at, created_at, updated_at`
 	err := r.db.QueryRow(query, leaveRequestData.EmployeeID, leaveRequestData.LeaveTypeID, leaveRequestData.StartDate, leaveRequestData.EndDate, leaveRequestData.Reason).Scan(
-		&leaveRequest.ID, &leaveRequest.EmployeeID, &leaveRequest.LeaveTypeID, &leaveRequest.StartDate, &leaveRequest.EndDate, &leaveRequest.Reason, &leaveRequest.Status, &leaveRequest.ApprovedBy, &leaveRequest.ApprovedAt, &leaveRequest.CreatedAt, &leaveRequest.UpdatedAt,
+		&leaveRequest.ID, &leaveRequest.EmployeeID, &leaveRequest.LeaveTypeID, &leaveRequest.StartDate, &leaveRequest.EndDate, &leaveRequest.Reason, &leaveRequest.Status, &leaveRequest.ApprovedBy, &approvedAt, &leaveRequest.CreatedAt, &leaveRequest.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
+	
+	// Convert sql.NullTime to *time.Time
+	if approvedAt.Valid {
+		leaveRequest.ApprovedAt = &approvedAt.Time
+	} else {
+		leaveRequest.ApprovedAt = nil
+	}
+	
 	return &leaveRequest, nil
 }
 
 func (r *repository) GetLeaveRequestByID(id uuid.UUID) (*models.LeaveRequest, error) {
 	var leaveRequest models.LeaveRequest
+	var approvedAt sql.NullTime
 	query := `SELECT id, employee_id, leave_type_id, start_date, end_date, reason, status, approved_by, approved_at, created_at, updated_at
 			  FROM leave_requests WHERE id = $1`
 	err := r.db.QueryRow(query, id).Scan(
-		&leaveRequest.ID, &leaveRequest.EmployeeID, &leaveRequest.LeaveTypeID, &leaveRequest.StartDate, &leaveRequest.EndDate, &leaveRequest.Reason, &leaveRequest.Status, &leaveRequest.ApprovedBy, &leaveRequest.ApprovedAt, &leaveRequest.CreatedAt, &leaveRequest.UpdatedAt,
+		&leaveRequest.ID, &leaveRequest.EmployeeID, &leaveRequest.LeaveTypeID, &leaveRequest.StartDate, &leaveRequest.EndDate, &leaveRequest.Reason, &leaveRequest.Status, &leaveRequest.ApprovedBy, &approvedAt, &leaveRequest.CreatedAt, &leaveRequest.UpdatedAt,
 	)
 	if err != nil {
 		return nil, errors.New("leave request not found")
 	}
+	
+	// Convert sql.NullTime to *time.Time
+	if approvedAt.Valid {
+		leaveRequest.ApprovedAt = &approvedAt.Time
+	} else {
+		leaveRequest.ApprovedAt = nil
+	}
+	
 	return &leaveRequest, nil
 }
 
@@ -145,9 +164,18 @@ func (r *repository) ListLeaveRequests() ([]models.LeaveRequest, error) {
 
 	for rows.Next() {
 		var leaveRequest models.LeaveRequest
-		if err := rows.Scan(&leaveRequest.ID, &leaveRequest.EmployeeID, &leaveRequest.LeaveTypeID, &leaveRequest.StartDate, &leaveRequest.EndDate, &leaveRequest.Reason, &leaveRequest.Status, &leaveRequest.ApprovedBy, &leaveRequest.ApprovedAt, &leaveRequest.CreatedAt, &leaveRequest.UpdatedAt); err != nil {
+		var approvedAt sql.NullTime
+		if err := rows.Scan(&leaveRequest.ID, &leaveRequest.EmployeeID, &leaveRequest.LeaveTypeID, &leaveRequest.StartDate, &leaveRequest.EndDate, &leaveRequest.Reason, &leaveRequest.Status, &leaveRequest.ApprovedBy, &approvedAt, &leaveRequest.CreatedAt, &leaveRequest.UpdatedAt); err != nil {
 			return nil, err
 		}
+		
+		// Convert sql.NullTime to *time.Time
+		if approvedAt.Valid {
+			leaveRequest.ApprovedAt = &approvedAt.Time
+		} else {
+			leaveRequest.ApprovedAt = nil
+		}
+		
 		leaveRequests = append(leaveRequests, leaveRequest)
 	}
 	return leaveRequests, nil
@@ -155,15 +183,24 @@ func (r *repository) ListLeaveRequests() ([]models.LeaveRequest, error) {
 
 func (r *repository) UpdateLeaveRequestStatus(id uuid.UUID, status string, approvedBy *uuid.UUID) (*models.LeaveRequest, error) {
 	var leaveRequest models.LeaveRequest
+	var approvedAt sql.NullTime
 	query := `UPDATE leave_requests
 			  SET status = $1, approved_by = $2, approved_at = NOW(), updated_at = NOW()
 			  WHERE id = $3
 			  RETURNING id, employee_id, leave_type_id, start_date, end_date, reason, status, approved_by, approved_at, created_at, updated_at`
 	err := r.db.QueryRow(query, status, approvedBy, id).Scan(
-		&leaveRequest.ID, &leaveRequest.EmployeeID, &leaveRequest.LeaveTypeID, &leaveRequest.StartDate, &leaveRequest.EndDate, &leaveRequest.Reason, &leaveRequest.Status, &leaveRequest.ApprovedBy, &leaveRequest.ApprovedAt, &leaveRequest.CreatedAt, &leaveRequest.UpdatedAt,
+		&leaveRequest.ID, &leaveRequest.EmployeeID, &leaveRequest.LeaveTypeID, &leaveRequest.StartDate, &leaveRequest.EndDate, &leaveRequest.Reason, &leaveRequest.Status, &leaveRequest.ApprovedBy, &approvedAt, &leaveRequest.CreatedAt, &leaveRequest.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
+	
+	// Convert sql.NullTime to *time.Time
+	if approvedAt.Valid {
+		leaveRequest.ApprovedAt = &approvedAt.Time
+	} else {
+		leaveRequest.ApprovedAt = nil
+	}
+	
 	return &leaveRequest, nil
 }

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"database/sql"
 	"employee-management/internal/database"
 	"employee-management/internal/models"
 	"errors"
@@ -92,12 +93,20 @@ func (s *Service) ValidateToken(tokenString string) (*Claims, error) {
 func (s *Service) Login(username, password string) (string, *models.User, error) {
 
 	var user models.User
+	var lastLogin sql.NullTime
 	err := s.db.QueryRow(
 		"SELECT id, username, email, password, role, is_active, last_login, created_at, updated_at FROM users WHERE username = $1",
-		username).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Role, &user.IsActive, &user.LastLogin, &user.CreatedAt, &user.UpdatedAt)
+		username).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Role, &user.IsActive, &lastLogin, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
 		return "", nil, errors.New("invalid username or password")
+	}
+
+	// Convert sql.NullTime to *time.Time
+	if lastLogin.Valid {
+		user.LastLogin = &lastLogin.Time
+	} else {
+		user.LastLogin = nil
 	}
 
 	if !user.IsActive {
@@ -108,13 +117,18 @@ func (s *Service) Login(username, password string) (string, *models.User, error)
 		return "", nil, errors.New("invalid username or password")
 	}
 
+	now := time.Now()
 	_, err = s.db.Exec(
 		"UPDATE users SET last_login = $1 WHERE id = $2",
-		time.Now(), user.ID)
+		now, user.ID)
 
 	if err != nil {
-
+		// Log the error but don't fail the login
+		// In a production environment, you might want to use a proper logger
 	}
+
+	// Update the user's LastLogin field with the current time
+	user.LastLogin = &now
 
 	token, err := s.GenerateToken(&user)
 	if err != nil {
@@ -134,12 +148,20 @@ func (s *Service) Register(userReg *models.UserRegister) (*models.User, error) {
 	}
 
 	var user models.User
+	var lastLogin sql.NullTime
 	err = s.db.QueryRow(
 		"INSERT INTO users (username, email, password, role, is_active) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, role, is_active, last_login, created_at, updated_at",
-		userReg.Username, userReg.Email, hashedPassword, userReg.Role, true).Scan(&user.ID, &user.Username, &user.Email, &user.Role, &user.IsActive, &user.LastLogin, &user.CreatedAt, &user.UpdatedAt)
+		userReg.Username, userReg.Email, hashedPassword, userReg.Role, true).Scan(&user.ID, &user.Username, &user.Email, &user.Role, &user.IsActive, &lastLogin, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
 		return nil, err
+	}
+
+	// Convert sql.NullTime to *time.Time
+	if lastLogin.Valid {
+		user.LastLogin = &lastLogin.Time
+	} else {
+		user.LastLogin = nil
 	}
 
 	return &user, nil
@@ -147,12 +169,20 @@ func (s *Service) Register(userReg *models.UserRegister) (*models.User, error) {
 
 func (s *Service) GetUserByID(id string) (*models.User, error) {
 	var user models.User
+	var lastLogin sql.NullTime
 	err := s.db.QueryRow(
 		"SELECT id, username, email, role, is_active, last_login, created_at, updated_at FROM users WHERE id = $1",
-		id).Scan(&user.ID, &user.Username, &user.Email, &user.Role, &user.IsActive, &user.LastLogin, &user.CreatedAt, &user.UpdatedAt)
+		id).Scan(&user.ID, &user.Username, &user.Email, &user.Role, &user.IsActive, &lastLogin, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
 		return nil, err
+	}
+
+	// Convert sql.NullTime to *time.Time
+	if lastLogin.Valid {
+		user.LastLogin = &lastLogin.Time
+	} else {
+		user.LastLogin = nil
 	}
 
 	return &user, nil

@@ -76,12 +76,12 @@ docker-logs:
 # Run database migrations
 .PHONY: migrate-up
 migrate-up:
-	# Add migration command here when migrations are implemented
+	go run cmd/migrate/main.go up
 
 # Run database rollback
 .PHONY: migrate-down
 migrate-down:
-	# Add rollback command here when migrations are implemented
+	go run cmd/migrate/main.go down
 
 # Generate Swagger documentation
 .PHONY: swagger

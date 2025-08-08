@@ -4,6 +4,9 @@ import (
 	"employee-management/internal/database"
 	"employee-management/internal/server"
 	"log"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 // @title Employee Management System API
@@ -27,6 +30,10 @@ import (
 // @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+
 	// Initialize database connection
 	db, err := database.Initialize()
 	if err != nil {
@@ -39,4 +46,11 @@ func main() {
 	if err := srv.Run(); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
