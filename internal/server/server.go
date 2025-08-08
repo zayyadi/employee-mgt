@@ -5,6 +5,7 @@ import (
 	"employee-management/internal/auth"
 	"employee-management/internal/database"
 	"employee-management/internal/department"
+	"employee-management/internal/document"
 	"employee-management/internal/employee"
 	"employee-management/internal/leave"
 	"employee-management/internal/middleware"
@@ -30,6 +31,7 @@ type Server struct {
 	attendanceHandler *attendance.Handler
 	leaveHandler      *leave.Handler
 	payrollHandler    *payroll.Handler
+	documentHandler   *document.Handler
 }
 
 // NewServer creates a new server instance
@@ -81,6 +83,10 @@ func NewServer(db *database.DB) *Server {
 	payrollService := payroll.NewService(payrollRepo, employeeService)
 	payrollHandler := payroll.NewHandler(payrollService)
 
+	documentRepo := document.NewRepository(db)
+	documentService := document.NewService(documentRepo)
+	documentHandler := document.NewHandler(documentService)
+
 	return &Server{
 		router:            router,
 		db:                db,
@@ -91,6 +97,7 @@ func NewServer(db *database.DB) *Server {
 		attendanceHandler: attendanceHandler,
 		leaveHandler:      leaveHandler,
 		payrollHandler:    payrollHandler,
+		documentHandler:   documentHandler,
 	}
 }
 
@@ -215,6 +222,15 @@ func (s *Server) setupRoutes() {
 		payslips := v1.Group("/payslips")
 		{
 			payslips.GET("/:id", s.getPayslip)
+		}
+
+		// Document routes
+		documents := v1.Group("/documents")
+		{
+			documents.POST("/", s.uploadDocument)
+			documents.GET("/", s.listDocuments)
+			documents.GET("/:id", s.getDocument)
+			documents.DELETE("/:id", s.deleteDocument)
 		}
 
 		// Report routes
@@ -360,6 +376,12 @@ func (s *Server) getEmployeeSalaries(c *gin.Context)   { s.payrollHandler.GetEmp
 func (s *Server) createTaxBracket(c *gin.Context)      { s.payrollHandler.CreateTaxBracket(c) }
 func (s *Server) getTaxBrackets(c *gin.Context)        { s.payrollHandler.GetTaxBrackets(c) }
 func (s *Server) getPayslip(c *gin.Context)            { s.payrollHandler.GetPayslip(c) }
+
+// Document Handlers
+func (s *Server) uploadDocument(c *gin.Context) { s.documentHandler.UploadDocument(c) }
+func (s *Server) listDocuments(c *gin.Context)  { s.documentHandler.ListDocuments(c) }
+func (s *Server) getDocument(c *gin.Context)    { s.documentHandler.GetDocument(c) }
+func (s *Server) deleteDocument(c *gin.Context) { s.documentHandler.DeleteDocument(c) }
 
 func (s *Server) listReports(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "list reports endpoint"})
