@@ -1,0 +1,343 @@
+package server
+
+import (
+	"employee-management/internal/attendance"
+	"employee-management/internal/auth"
+	"employee-management/internal/database"
+	"employee-management/internal/department"
+	"employee-management/internal/employee"
+	"employee-management/internal/middleware"
+	"employee-management/internal/position"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
+)
+
+// Server represents the HTTP server
+type Server struct {
+	router            *gin.Engine
+	db                *database.DB
+	authHandler       *auth.Handler
+	employeeHandler   *employee.Handler
+	departmentHandler *department.Handler
+	positionHandler   *position.Handler
+	attendanceHandler *attendance.Handler
+}
+
+// NewServer creates a new server instance
+func NewServer(db *database.DB) *Server {
+	// Set Gin to release mode in production
+	gin.SetMode(gin.ReleaseMode)
+
+	// Create router
+	router := gin.New()
+
+	// Add middlewares
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+	router.Use(middleware.CORS())
+
+	// Add custom validators
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		// Add custom validators here if needed
+		_ = v
+	}
+
+	// Initialize auth service and handler
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "default-secret" // Fallback for development
+	}
+
+	authService := auth.NewService(db, jwtSecret)
+	authHandler := auth.NewHandler(authService)
+
+	employeeService := employee.NewService(db)
+	employeeHandler := employee.NewHandler(employeeService)
+
+	departmentService := department.NewService(db)
+	departmentHandler := department.NewHandler(departmentService)
+
+	positionService := position.NewService(db)
+	positionHandler := position.NewHandler(positionService)
+
+	attendanceService := attendance.NewService(db)
+	attendanceHandler := attendance.NewHandler(attendanceService)
+
+	return &Server{
+		router:            router,
+		db:                db,
+		authHandler:       authHandler,
+		employeeHandler:   employeeHandler,
+		departmentHandler: departmentHandler,
+		positionHandler:   positionHandler,
+		attendanceHandler: attendanceHandler,
+	}
+}
+
+// setupRoutes sets up all the routes for the application
+func (s *Server) setupRoutes() {
+	// Health check endpoint
+	s.router.GET("/health", s.healthCheck)
+
+	// API v1 routes
+	v1 := s.router.Group("/api/v1")
+	{
+		// Auth routes
+		auth := v1.Group("/auth")
+		{
+			auth.POST("/login", s.login)
+			auth.POST("/logout", s.logout)
+			auth.POST("/register", s.register)
+			auth.POST("/forgot-password", s.forgotPassword)
+			auth.POST("/reset-password", s.resetPassword)
+			auth.POST("/refresh", s.refreshToken)
+		}
+
+		// Employee routes
+		employees := v1.Group("/employees")
+		{
+			employees.GET("/", s.listEmployees)
+			employees.GET("/:id", s.getEmployee)
+			employees.POST("/", s.createEmployee)
+			employees.PUT("/:id", s.updateEmployee)
+			employees.DELETE("/:id", s.deleteEmployee)
+			employees.GET("/search", s.searchEmployees)
+		}
+
+		// Department routes
+		departments := v1.Group("/departments")
+		{
+			departments.GET("/", s.listDepartments)
+			departments.GET("/:id", s.getDepartment)
+			departments.POST("/", s.createDepartment)
+			departments.PUT("/:id", s.updateDepartment)
+			departments.DELETE("/:id", s.deleteDepartment)
+		}
+
+		// Position routes
+		positions := v1.Group("/positions")
+		{
+			positions.GET("/", s.listPositions)
+			positions.GET("/:id", s.getPosition)
+			positions.POST("/", s.createPosition)
+			positions.PUT("/:id", s.updatePosition)
+			positions.DELETE("/:id", s.deletePosition)
+		}
+
+		// Attendance routes
+		attendance := v1.Group("/attendance")
+		{
+			attendance.GET("/", s.listAttendance)
+			attendance.GET("/:id", s.getAttendance)
+			attendance.POST("/check-in", s.checkIn)
+			attendance.POST("/check-out", s.checkOut)
+			attendance.POST("/", s.createAttendance)
+			attendance.PUT("/:id", s.updateAttendance)
+		}
+
+		// Leave routes
+		leave := v1.Group("/leave")
+		{
+			leave.GET("/types", s.listLeaveTypes)
+			leave.GET("/requests", s.listLeaveRequests)
+			leave.GET("/requests/:id", s.getLeaveRequest)
+			leave.POST("/requests", s.createLeaveRequest)
+			leave.PUT("/requests/:id/approve", s.approveLeaveRequest)
+			leave.PUT("/requests/:id/reject", s.rejectLeaveRequest)
+		}
+
+		// Payroll routes
+		payroll := v1.Group("/payroll")
+		{
+			payroll.GET("/", s.listPayroll)
+			payroll.POST("/calculate", s.calculatePayroll)
+			payroll.GET("/:id", s.getPayroll)
+			payroll.POST("/:id/approve", s.approvePayroll)
+			payroll.POST("/:id/process", s.processPayroll)
+		}
+
+		// Payslip routes
+		payslips := v1.Group("/payslips")
+		{
+			payslips.GET("/:id", s.getPayslip)
+			payslips.POST("/:id/send", s.sendPayslip)
+		}
+
+		// Report routes
+		reports := v1.Group("/reports")
+		{
+			reports.GET("/", s.listReports)
+			reports.GET("/:type", s.generateReport)
+			reports.POST("/:type/export", s.exportReport)
+		}
+
+		// Notification routes
+		notifications := v1.Group("/notifications")
+		{
+			notifications.GET("/", s.listNotifications)
+			notifications.PUT("/:id/read", s.markNotificationAsRead)
+			notifications.PUT("/read-all", s.markAllNotificationsAsRead)
+		}
+	}
+}
+
+// Run starts the HTTP server
+func (s *Server) Run() error {
+	// Setup routes
+	s.setupRoutes()
+
+	// Create HTTP server
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      s.router,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	// Start server
+	return server.ListenAndServe()
+}
+
+// healthCheck handles health check requests
+func (s *Server) healthCheck(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"time":   time.Now().Format(time.RFC3339),
+	})
+}
+
+// Auth handlers
+func (s *Server) login(c *gin.Context)          { s.authHandler.Login(c) }
+func (s *Server) logout(c *gin.Context)         { s.authHandler.Logout(c) }
+func (s *Server) register(c *gin.Context)       { s.authHandler.Register(c) }
+func (s *Server) forgotPassword(c *gin.Context) { s.authHandler.ForgotPassword(c) }
+func (s *Server) resetPassword(c *gin.Context)  { s.authHandler.ResetPassword(c) }
+func (s *Server) refreshToken(c *gin.Context)   { s.authHandler.RefreshToken(c) }
+func (s *Server) listEmployees(c *gin.Context) {
+	s.employeeHandler.ListEmployees(c)
+}
+func (s *Server) getEmployee(c *gin.Context) {
+	s.employeeHandler.GetEmployee(c)
+}
+func (s *Server) createEmployee(c *gin.Context) {
+	s.employeeHandler.CreateEmployee(c)
+}
+func (s *Server) updateEmployee(c *gin.Context) {
+	s.employeeHandler.UpdateEmployee(c)
+}
+func (s *Server) deleteEmployee(c *gin.Context) {
+	s.employeeHandler.DeleteEmployee(c)
+}
+func (s *Server) searchEmployees(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "search employees endpoint"})
+}
+func (s *Server) listDepartments(c *gin.Context) {
+	s.departmentHandler.ListDepartments(c)
+}
+func (s *Server) getDepartment(c *gin.Context) {
+	s.departmentHandler.GetDepartment(c)
+}
+func (s *Server) createDepartment(c *gin.Context) {
+	s.departmentHandler.CreateDepartment(c)
+}
+func (s *Server) updateDepartment(c *gin.Context) {
+	s.departmentHandler.UpdateDepartment(c)
+}
+func (s *Server) deleteDepartment(c *gin.Context) {
+	s.departmentHandler.DeleteDepartment(c)
+}
+func (s *Server) listPositions(c *gin.Context) {
+	s.positionHandler.ListPositions(c)
+}
+func (s *Server) getPosition(c *gin.Context) {
+	s.positionHandler.GetPosition(c)
+}
+func (s *Server) createPosition(c *gin.Context) {
+	s.positionHandler.CreatePosition(c)
+}
+func (s *Server) updatePosition(c *gin.Context) {
+	s.positionHandler.UpdatePosition(c)
+}
+func (s *Server) deletePosition(c *gin.Context) {
+	s.positionHandler.DeletePosition(c)
+}
+func (s *Server) listAttendance(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "list attendance endpoint"})
+}
+func (s *Server) getAttendance(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "get attendance endpoint"})
+}
+func (s *Server) checkIn(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "check in endpoint"})
+}
+func (s *Server) checkOut(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "check out endpoint"})
+}
+func (s *Server) createAttendance(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "create attendance endpoint"})
+}
+func (s *Server) updateAttendance(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "update attendance endpoint"})
+}
+func (s *Server) listLeaveTypes(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "list leave types endpoint"})
+}
+func (s *Server) listLeaveRequests(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "list leave requests endpoint"})
+}
+func (s *Server) getLeaveRequest(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "get leave request endpoint"})
+}
+func (s *Server) createLeaveRequest(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "create leave request endpoint"})
+}
+func (s *Server) approveLeaveRequest(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "approve leave request endpoint"})
+}
+func (s *Server) rejectLeaveRequest(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "reject leave request endpoint"})
+}
+func (s *Server) listPayroll(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "list payroll endpoint"})
+}
+func (s *Server) calculatePayroll(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "calculate payroll endpoint"})
+}
+func (s *Server) getPayroll(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "get payroll endpoint"})
+}
+func (s *Server) approvePayroll(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "approve payroll endpoint"})
+}
+func (s *Server) processPayroll(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "process payroll endpoint"})
+}
+func (s *Server) getPayslip(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "get payslip endpoint"})
+}
+func (s *Server) sendPayslip(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "send payslip endpoint"})
+}
+func (s *Server) listReports(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "list reports endpoint"})
+}
+func (s *Server) generateReport(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "generate report endpoint"})
+}
+func (s *Server) exportReport(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "export report endpoint"})
+}
+func (s *Server) listNotifications(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "list notifications endpoint"})
+}
+func (s *Server) markNotificationAsRead(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "mark notification as read endpoint"})
+}
+func (s *Server) markAllNotificationsAsRead(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "mark all notifications as read endpoint"})
+}

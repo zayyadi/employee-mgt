@@ -1,0 +1,55 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+employee-management
+
+# Build output
+bin/
+obj/
+build/
+
+# Environment files
+.env
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+init.sql
+
+# Uploads
+uploads/
+
+# Temporary files
+tmp/
+temp/
+
+# Coverage output
+coverage.out
+coverage.html
+
+# Dependency directories
+vendor/
+
+# Docker
+.dockerignore
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Swagger docs
+docs/swagger/
