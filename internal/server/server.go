@@ -107,6 +107,9 @@ func NewServer(db *database.DB, logger *logrus.Logger) *Server {
 
 // setupRoutes sets up all the routes for the application
 func (s *Server) setupRoutes() {
+	// Serve frontend static files
+	s.router.Static("/dashboard", "./frontend")
+
 	// Health check and metrics endpoints
 	s.router.GET("/health", s.healthCheck)
 	s.router.GET("/metrics", gin.WrapH(promhttp.Handler()))
