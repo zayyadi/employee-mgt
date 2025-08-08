@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// Repository defines the interface for employee data operations
 type Repository interface {
 	CreateEmployee(employeeData *models.EmployeeCreate) (*models.Employee, error)
 	GetEmployeeByID(id uuid.UUID) (*models.Employee, error)
@@ -17,19 +16,16 @@ type Repository interface {
 	ListEmployees() ([]models.Employee, error)
 }
 
-// repository is the implementation of the Repository interface
 type repository struct {
 	db *database.DB
 }
 
-// NewRepository creates a new employee repository
 func NewRepository(db *database.DB) Repository {
 	return &repository{
 		db: db,
 	}
 }
 
-// CreateEmployee creates a new employee in the database
 func (r *repository) CreateEmployee(employeeData *models.EmployeeCreate) (*models.Employee, error) {
 	var employee models.Employee
 	query := `
@@ -50,7 +46,6 @@ func (r *repository) CreateEmployee(employeeData *models.EmployeeCreate) (*model
 	return &employee, nil
 }
 
-// GetEmployeeByID retrieves an employee by their ID from the database
 func (r *repository) GetEmployeeByID(id uuid.UUID) (*models.Employee, error) {
 	var employee models.Employee
 	query := `
@@ -68,7 +63,6 @@ func (r *repository) GetEmployeeByID(id uuid.UUID) (*models.Employee, error) {
 	return &employee, nil
 }
 
-// UpdateEmployee updates an existing employee's information in the database
 func (r *repository) UpdateEmployee(id uuid.UUID, employeeData *models.EmployeeUpdate) (*models.Employee, error) {
 	var employee models.Employee
 	query := `
@@ -90,7 +84,6 @@ func (r *repository) UpdateEmployee(id uuid.UUID, employeeData *models.EmployeeU
 	return &employee, nil
 }
 
-// DeleteEmployee deletes an employee by their ID from the database
 func (r *repository) DeleteEmployee(id uuid.UUID) error {
 	result, err := r.db.Exec("DELETE FROM employees WHERE id = $1", id)
 	if err != nil {
@@ -109,7 +102,6 @@ func (r *repository) DeleteEmployee(id uuid.UUID) error {
 	return nil
 }
 
-// ListEmployees retrieves a list of all employees from the database
 func (r *repository) ListEmployees() ([]models.Employee, error) {
 	var employees []models.Employee
 	query := `
