@@ -8,16 +8,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// Repository defines the interface for leave data operations
 type Repository interface {
-	// Leave Type methods
 	CreateLeaveType(leaveTypeData *models.LeaveTypeCreate) (*models.LeaveType, error)
 	GetLeaveTypeByID(id uuid.UUID) (*models.LeaveType, error)
 	ListLeaveTypes() ([]models.LeaveType, error)
 	UpdateLeaveType(id uuid.UUID, leaveTypeData *models.LeaveTypeUpdate) (*models.LeaveType, error)
 	DeleteLeaveType(id uuid.UUID) error
 
-	// Leave Request methods
 	CreateLeaveRequest(leaveRequestData *models.LeaveRequestCreate) (*models.LeaveRequest, error)
 	GetLeaveRequestByID(id uuid.UUID) (*models.LeaveRequest, error)
 	ListLeaveRequests() ([]models.LeaveRequest, error)
@@ -28,12 +25,10 @@ type repository struct {
 	db *database.DB
 }
 
-// NewRepository creates a new leave repository
 func NewRepository(db *database.DB) Repository {
 	return &repository{db}
 }
 
-// CreateLeaveType creates a new leave type
 func (r *repository) CreateLeaveType(leaveTypeData *models.LeaveTypeCreate) (*models.LeaveType, error) {
 	var leaveType models.LeaveType
 	query := `INSERT INTO leave_types (name, description, max_days_per_year, is_accrued)
@@ -48,7 +43,6 @@ func (r *repository) CreateLeaveType(leaveTypeData *models.LeaveTypeCreate) (*mo
 	return &leaveType, nil
 }
 
-// GetLeaveTypeByID retrieves a leave type by ID
 func (r *repository) GetLeaveTypeByID(id uuid.UUID) (*models.LeaveType, error) {
 	var leaveType models.LeaveType
 	query := `SELECT id, name, description, max_days_per_year, is_accrued, created_at, updated_at
@@ -62,7 +56,6 @@ func (r *repository) GetLeaveTypeByID(id uuid.UUID) (*models.LeaveType, error) {
 	return &leaveType, nil
 }
 
-// ListLeaveTypes retrieves all leave types
 func (r *repository) ListLeaveTypes() ([]models.LeaveType, error) {
 	var leaveTypes []models.LeaveType
 	query := `SELECT id, name, description, max_days_per_year, is_accrued, created_at, updated_at
@@ -83,7 +76,6 @@ func (r *repository) ListLeaveTypes() ([]models.LeaveType, error) {
 	return leaveTypes, nil
 }
 
-// UpdateLeaveType updates a leave type
 func (r *repository) UpdateLeaveType(id uuid.UUID, leaveTypeData *models.LeaveTypeUpdate) (*models.LeaveType, error) {
 	var leaveType models.LeaveType
 	query := `UPDATE leave_types
@@ -99,7 +91,6 @@ func (r *repository) UpdateLeaveType(id uuid.UUID, leaveTypeData *models.LeaveTy
 	return &leaveType, nil
 }
 
-// DeleteLeaveType deletes a leave type
 func (r *repository) DeleteLeaveType(id uuid.UUID) error {
 	result, err := r.db.Exec("DELETE FROM leave_types WHERE id = $1", id)
 	if err != nil {
@@ -115,7 +106,6 @@ func (r *repository) DeleteLeaveType(id uuid.UUID) error {
 	return nil
 }
 
-// CreateLeaveRequest creates a new leave request
 func (r *repository) CreateLeaveRequest(leaveRequestData *models.LeaveRequestCreate) (*models.LeaveRequest, error) {
 	var leaveRequest models.LeaveRequest
 	query := `INSERT INTO leave_requests (employee_id, leave_type_id, start_date, end_date, reason)
@@ -130,7 +120,6 @@ func (r *repository) CreateLeaveRequest(leaveRequestData *models.LeaveRequestCre
 	return &leaveRequest, nil
 }
 
-// GetLeaveRequestByID retrieves a leave request by ID
 func (r *repository) GetLeaveRequestByID(id uuid.UUID) (*models.LeaveRequest, error) {
 	var leaveRequest models.LeaveRequest
 	query := `SELECT id, employee_id, leave_type_id, start_date, end_date, reason, status, approved_by, approved_at, created_at, updated_at
@@ -144,7 +133,6 @@ func (r *repository) GetLeaveRequestByID(id uuid.UUID) (*models.LeaveRequest, er
 	return &leaveRequest, nil
 }
 
-// ListLeaveRequests retrieves all leave requests
 func (r *repository) ListLeaveRequests() ([]models.LeaveRequest, error) {
 	var leaveRequests []models.LeaveRequest
 	query := `SELECT id, employee_id, leave_type_id, start_date, end_date, reason, status, approved_by, approved_at, created_at, updated_at
@@ -165,7 +153,6 @@ func (r *repository) ListLeaveRequests() ([]models.LeaveRequest, error) {
 	return leaveRequests, nil
 }
 
-// UpdateLeaveRequestStatus updates the status of a leave request
 func (r *repository) UpdateLeaveRequestStatus(id uuid.UUID, status string, approvedBy *uuid.UUID) (*models.LeaveRequest, error) {
 	var leaveRequest models.LeaveRequest
 	query := `UPDATE leave_requests

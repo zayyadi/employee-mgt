@@ -8,17 +8,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// Handler handles HTTP requests for leave management
 type Handler struct {
 	service *Service
 }
 
-// NewHandler creates a new leave handler
 func NewHandler(service *Service) *Handler {
 	return &Handler{service}
 }
-
-// Leave Type Handlers
 
 func (h *Handler) CreateLeaveType(c *gin.Context) {
 	var input models.LeaveTypeCreate
@@ -99,17 +95,12 @@ func (h *Handler) DeleteLeaveType(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
-// Leave Request Handlers
-
 func (h *Handler) CreateLeaveRequest(c *gin.Context) {
 	var input models.LeaveRequestCreate
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	// In a real app, you would get the employee ID from the authenticated user
-	// For now, we'll trust the input.
 
 	leaveRequest, err := h.service.CreateLeaveRequest(&input)
 	if err != nil {
@@ -153,9 +144,7 @@ func (h *Handler) ApproveLeaveRequest(c *gin.Context) {
 		return
 	}
 
-	// In a real app, you would get the approver's user ID from the authenticated user (e.g. a manager)
-	// For simplicity, we'll use a placeholder UUID.
-	approverID := uuid.New() // Placeholder
+	approverID := uuid.New()
 
 	leaveRequest, err := h.service.ApproveLeaveRequest(id, approverID)
 	if err != nil {
@@ -173,8 +162,7 @@ func (h *Handler) RejectLeaveRequest(c *gin.Context) {
 		return
 	}
 
-	// Similar to approve, get rejector's ID from auth context.
-	rejectorID := uuid.New() // Placeholder
+	rejectorID := uuid.New()
 
 	leaveRequest, err := h.service.RejectLeaveRequest(id, rejectorID)
 	if err != nil {
