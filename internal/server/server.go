@@ -6,6 +6,7 @@ import (
 	"employee-management/internal/database"
 	"employee-management/internal/department"
 	"employee-management/internal/employee"
+	"employee-management/internal/leave"
 	"employee-management/internal/middleware"
 	"employee-management/internal/position"
 	"net/http"
@@ -26,6 +27,7 @@ type Server struct {
 	departmentHandler *department.Handler
 	positionHandler   *position.Handler
 	attendanceHandler *attendance.Handler
+	leaveHandler      *leave.Handler
 }
 
 // NewServer creates a new server instance
@@ -56,7 +58,8 @@ func NewServer(db *database.DB) *Server {
 	authService := auth.NewService(db, jwtSecret)
 	authHandler := auth.NewHandler(authService)
 
-	employeeService := employee.NewService(db)
+	employeeRepo := employee.NewRepository(db)
+	employeeService := employee.NewService(employeeRepo)
 	employeeHandler := employee.NewHandler(employeeService)
 
 	departmentService := department.NewService(db)
@@ -68,6 +71,10 @@ func NewServer(db *database.DB) *Server {
 	attendanceService := attendance.NewService(db)
 	attendanceHandler := attendance.NewHandler(attendanceService)
 
+	leaveRepo := leave.NewRepository(db)
+	leaveService := leave.NewService(leaveRepo)
+	leaveHandler := leave.NewHandler(leaveService)
+
 	return &Server{
 		router:            router,
 		db:                db,
@@ -76,6 +83,7 @@ func NewServer(db *database.DB) *Server {
 		departmentHandler: departmentHandler,
 		positionHandler:   positionHandler,
 		attendanceHandler: attendanceHandler,
+		leaveHandler:      leaveHandler,
 	}
 }
 
@@ -143,12 +151,25 @@ func (s *Server) setupRoutes() {
 		// Leave routes
 		leave := v1.Group("/leave")
 		{
-			leave.GET("/types", s.listLeaveTypes)
-			leave.GET("/requests", s.listLeaveRequests)
-			leave.GET("/requests/:id", s.getLeaveRequest)
-			leave.POST("/requests", s.createLeaveRequest)
-			leave.PUT("/requests/:id/approve", s.approveLeaveRequest)
-			leave.PUT("/requests/:id/reject", s.rejectLeaveRequest)
+			// Leave Types
+			leaveTypes := leave.Group("/types")
+			{
+				leaveTypes.GET("/", s.listLeaveTypes)
+				leaveTypes.POST("/", s.createLeaveType)
+				leaveTypes.GET("/:id", s.getLeaveType)
+				leaveTypes.PUT("/:id", s.updateLeaveType)
+				leaveTypes.DELETE("/:id", s.deleteLeaveType)
+			}
+
+			// Leave Requests
+			leaveRequests := leave.Group("/requests")
+			{
+				leaveRequests.GET("/", s.listLeaveRequests)
+				leaveRequests.POST("/", s.createLeaveRequest)
+				leaveRequests.GET("/:id", s.getLeaveRequest)
+				leaveRequests.PUT("/:id/approve", s.approveLeaveRequest)
+				leaveRequests.PUT("/:id/reject", s.rejectLeaveRequest)
+			}
 		}
 
 		// Payroll routes
@@ -284,24 +305,19 @@ func (s *Server) createAttendance(c *gin.Context) {
 func (s *Server) updateAttendance(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "update attendance endpoint"})
 }
-func (s *Server) listLeaveTypes(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "list leave types endpoint"})
-}
-func (s *Server) listLeaveRequests(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "list leave requests endpoint"})
-}
-func (s *Server) getLeaveRequest(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "get leave request endpoint"})
-}
-func (s *Server) createLeaveRequest(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "create leave request endpoint"})
-}
-func (s *Server) approveLeaveRequest(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "approve leave request endpoint"})
-}
-func (s *Server) rejectLeaveRequest(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "reject leave request endpoint"})
-}
+
+// Leave handlers
+func (s *Server) listLeaveTypes(c *gin.Context)      { s.leaveHandler.ListLeaveTypes(c) }
+func (s *Server) createLeaveType(c *gin.Context)     { s.leaveHandler.CreateLeaveType(c) }
+func (s *Server) getLeaveType(c *gin.Context)        { s.leaveHandler.GetLeaveType(c) }
+func (s *Server) updateLeaveType(c *gin.Context)     { s.leaveHandler.UpdateLeaveType(c) }
+func (s *Server) deleteLeaveType(c *gin.Context)     { s.leaveHandler.DeleteLeaveType(c) }
+func (s *Server) listLeaveRequests(c *gin.Context)   { s.leaveHandler.ListLeaveRequests(c) }
+func (s *Server) createLeaveRequest(c *gin.Context)  { s.leaveHandler.CreateLeaveRequest(c) }
+func (s *Server) getLeaveRequest(c *gin.Context)     { s.leaveHandler.GetLeaveRequest(c) }
+func (s *Server) approveLeaveRequest(c *gin.Context) { s.leaveHandler.ApproveLeaveRequest(c) }
+func (s *Server) rejectLeaveRequest(c *gin.Context)  { s.leaveHandler.RejectLeaveRequest(c) }
+
 func (s *Server) listPayroll(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "list payroll endpoint"})
 }
