@@ -8,6 +8,7 @@ import (
 	"employee-management/internal/employee"
 	"employee-management/internal/leave"
 	"employee-management/internal/middleware"
+	"employee-management/internal/payroll"
 	"employee-management/internal/position"
 	"net/http"
 	"os"
@@ -28,6 +29,7 @@ type Server struct {
 	positionHandler   *position.Handler
 	attendanceHandler *attendance.Handler
 	leaveHandler      *leave.Handler
+	payrollHandler    *payroll.Handler
 }
 
 // NewServer creates a new server instance
@@ -75,6 +77,10 @@ func NewServer(db *database.DB) *Server {
 	leaveService := leave.NewService(leaveRepo)
 	leaveHandler := leave.NewHandler(leaveService)
 
+	payrollRepo := payroll.NewRepository(db)
+	payrollService := payroll.NewService(payrollRepo, employeeService)
+	payrollHandler := payroll.NewHandler(payrollService)
+
 	return &Server{
 		router:            router,
 		db:                db,
@@ -84,6 +90,7 @@ func NewServer(db *database.DB) *Server {
 		positionHandler:   positionHandler,
 		attendanceHandler: attendanceHandler,
 		leaveHandler:      leaveHandler,
+		payrollHandler:    payrollHandler,
 	}
 }
 
@@ -173,20 +180,41 @@ func (s *Server) setupRoutes() {
 		}
 
 		// Payroll routes
-		payroll := v1.Group("/payroll")
+		payrollRoutes := v1.Group("/payroll")
 		{
-			payroll.GET("/", s.listPayroll)
-			payroll.POST("/calculate", s.calculatePayroll)
-			payroll.GET("/:id", s.getPayroll)
-			payroll.POST("/:id/approve", s.approvePayroll)
-			payroll.POST("/:id/process", s.processPayroll)
+			payrollRoutes.POST("/calculate", s.calculatePayroll)
+			payrollRoutes.GET("/", s.listPayrolls)
+			payrollRoutes.GET("/:id", s.getPayroll)
+			payrollRoutes.POST("/:id/approve", s.approvePayroll)
+			payrollRoutes.POST("/:id/process", s.processPayroll)
+
+			// Salary Components
+			components := payrollRoutes.Group("/components")
+			{
+				components.POST("/", s.createSalaryComponent)
+				components.GET("/", s.listSalaryComponents)
+				components.GET("/:id", s.getSalaryComponent)
+			}
+
+			// Employee Salaries
+			employeeSalaries := payrollRoutes.Group("/employee-salaries")
+			{
+				employeeSalaries.POST("/", s.createEmployeeSalary)
+				employeeSalaries.GET("/:employeeId", s.getEmployeeSalaries)
+			}
+
+			// Tax Brackets
+			taxBrackets := payrollRoutes.Group("/tax-brackets")
+			{
+				taxBrackets.POST("/", s.createTaxBracket)
+				taxBrackets.GET("/", s.getTaxBrackets)
+			}
 		}
 
 		// Payslip routes
 		payslips := v1.Group("/payslips")
 		{
 			payslips.GET("/:id", s.getPayslip)
-			payslips.POST("/:id/send", s.sendPayslip)
 		}
 
 		// Report routes
@@ -318,27 +346,21 @@ func (s *Server) getLeaveRequest(c *gin.Context)     { s.leaveHandler.GetLeaveRe
 func (s *Server) approveLeaveRequest(c *gin.Context) { s.leaveHandler.ApproveLeaveRequest(c) }
 func (s *Server) rejectLeaveRequest(c *gin.Context)  { s.leaveHandler.RejectLeaveRequest(c) }
 
-func (s *Server) listPayroll(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "list payroll endpoint"})
-}
-func (s *Server) calculatePayroll(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "calculate payroll endpoint"})
-}
-func (s *Server) getPayroll(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "get payroll endpoint"})
-}
-func (s *Server) approvePayroll(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "approve payroll endpoint"})
-}
-func (s *Server) processPayroll(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "process payroll endpoint"})
-}
-func (s *Server) getPayslip(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "get payslip endpoint"})
-}
-func (s *Server) sendPayslip(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "send payslip endpoint"})
-}
+// Payroll Handlers
+func (s *Server) calculatePayroll(c *gin.Context)      { s.payrollHandler.CalculatePayroll(c) }
+func (s *Server) listPayrolls(c *gin.Context)          { s.payrollHandler.ListPayrolls(c) }
+func (s *Server) getPayroll(c *gin.Context)            { s.payrollHandler.GetPayroll(c) }
+func (s *Server) approvePayroll(c *gin.Context)        { s.payrollHandler.ApprovePayroll(c) }
+func (s *Server) processPayroll(c *gin.Context)        { s.payrollHandler.ProcessPayroll(c) }
+func (s *Server) createSalaryComponent(c *gin.Context) { s.payrollHandler.CreateSalaryComponent(c) }
+func (s *Server) listSalaryComponents(c *gin.Context)  { s.payrollHandler.ListSalaryComponents(c) }
+func (s *Server) getSalaryComponent(c *gin.Context)    { s.payrollHandler.GetSalaryComponent(c) }
+func (s *Server) createEmployeeSalary(c *gin.Context)  { s.payrollHandler.CreateEmployeeSalary(c) }
+func (s *Server) getEmployeeSalaries(c *gin.Context)   { s.payrollHandler.GetEmployeeSalaries(c) }
+func (s *Server) createTaxBracket(c *gin.Context)      { s.payrollHandler.CreateTaxBracket(c) }
+func (s *Server) getTaxBrackets(c *gin.Context)        { s.payrollHandler.GetTaxBrackets(c) }
+func (s *Server) getPayslip(c *gin.Context)            { s.payrollHandler.GetPayslip(c) }
+
 func (s *Server) listReports(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "list reports endpoint"})
 }
