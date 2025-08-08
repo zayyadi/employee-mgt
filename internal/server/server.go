@@ -18,12 +18,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
 )
 
 // Server represents the HTTP server
 type Server struct {
 	router            *gin.Engine
 	db                *database.DB
+	logger            *logrus.Logger
 	authHandler       *auth.Handler
 	employeeHandler   *employee.Handler
 	departmentHandler *department.Handler
@@ -35,7 +38,7 @@ type Server struct {
 }
 
 // NewServer creates a new server instance
-func NewServer(db *database.DB) *Server {
+func NewServer(db *database.DB, logger *logrus.Logger) *Server {
 	// Set Gin to release mode in production
 	gin.SetMode(gin.ReleaseMode)
 
@@ -43,7 +46,7 @@ func NewServer(db *database.DB) *Server {
 	router := gin.New()
 
 	// Add middlewares
-	router.Use(gin.Logger())
+	router.Use(middleware.Logger(logger))
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORS())
 
@@ -90,6 +93,7 @@ func NewServer(db *database.DB) *Server {
 	return &Server{
 		router:            router,
 		db:                db,
+		logger:            logger,
 		authHandler:       authHandler,
 		employeeHandler:   employeeHandler,
 		departmentHandler: departmentHandler,
@@ -103,8 +107,9 @@ func NewServer(db *database.DB) *Server {
 
 // setupRoutes sets up all the routes for the application
 func (s *Server) setupRoutes() {
-	// Health check endpoint
+	// Health check and metrics endpoints
 	s.router.GET("/health", s.healthCheck)
+	s.router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// API v1 routes
 	v1 := s.router.Group("/api/v1")

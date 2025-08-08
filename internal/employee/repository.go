@@ -4,29 +4,36 @@ import (
 	"employee-management/internal/database"
 	"employee-management/internal/models"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
+// Repository defines the interface for employee data operations
 type Repository interface {
-	CreateEmployee(employeeData *models.EmployeeCreate) (*models.Employee, error)
-	GetEmployeeByID(id uuid.UUID) (*models.Employee, error)
-	UpdateEmployee(id uuid.UUID, employeeData *models.EmployeeUpdate) (*models.Employee, error)
-	DeleteEmployee(id uuid.UUID) error
-	ListEmployees() ([]models.Employee, error)
+	CreateEmployee(logger *logrus.Entry, employeeData *models.EmployeeCreate) (*models.Employee, error)
+	GetEmployeeByID(logger *logrus.Entry, id uuid.UUID) (*models.Employee, error)
+	UpdateEmployee(logger *logrus.Entry, id uuid.UUID, employeeData *models.EmployeeUpdate) (*models.Employee, error)
+	DeleteEmployee(logger *logrus.Entry, id uuid.UUID) error
+	ListEmployees(logger *logrus.Entry) ([]models.Employee, error)
 }
 
+// repository is the implementation of the Repository interface
 type repository struct {
 	db *database.DB
 }
 
+// NewRepository creates a new employee repository
 func NewRepository(db *database.DB) Repository {
 	return &repository{
 		db: db,
 	}
 }
 
-func (r *repository) CreateEmployee(employeeData *models.EmployeeCreate) (*models.Employee, error) {
+// CreateEmployee creates a new employee in the database
+func (r *repository) CreateEmployee(logger *logrus.Entry, employeeData *models.EmployeeCreate) (*models.Employee, error) {
+	startTime := time.Now()
 	var employee models.Employee
 	query := `
 		INSERT INTO employees (user_id, employee_id, first_name, last_name, date_of_birth, gender, marital_status, phone_number, email, address, emergency_contact_name, emergency_contact_phone, department_id, position_id, hire_date, employment_status, manager_id)
@@ -39,6 +46,11 @@ func (r *repository) CreateEmployee(employeeData *models.EmployeeCreate) (*model
 		&employee.ID, &employee.UserID, &employee.EmployeeID, &employee.FirstName, &employee.LastName, &employee.DateOfBirth, &employee.Gender, &employee.MaritalStatus, &employee.PhoneNumber, &employee.Email, &employee.Address, &employee.EmergencyContactName, &employee.EmergencyContactPhone, &employee.DepartmentID, &employee.PositionID, &employee.HireDate, &employee.EmploymentStatus, &employee.ManagerID, &employee.CreatedAt, &employee.UpdatedAt,
 	)
 
+	logger.WithFields(logrus.Fields{
+		"query":    query,
+		"duration": time.Since(startTime),
+	}).Debug("Executed CreateEmployee query")
+
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +58,9 @@ func (r *repository) CreateEmployee(employeeData *models.EmployeeCreate) (*model
 	return &employee, nil
 }
 
-func (r *repository) GetEmployeeByID(id uuid.UUID) (*models.Employee, error) {
+// GetEmployeeByID retrieves an employee by their ID from the database
+func (r *repository) GetEmployeeByID(logger *logrus.Entry, id uuid.UUID) (*models.Employee, error) {
+	startTime := time.Now()
 	var employee models.Employee
 	query := `
 		SELECT id, user_id, employee_id, first_name, last_name, date_of_birth, gender, marital_status, phone_number, email, address, emergency_contact_name, emergency_contact_phone, department_id, position_id, hire_date, employment_status, manager_id, created_at, updated_at
@@ -56,6 +70,11 @@ func (r *repository) GetEmployeeByID(id uuid.UUID) (*models.Employee, error) {
 		&employee.ID, &employee.UserID, &employee.EmployeeID, &employee.FirstName, &employee.LastName, &employee.DateOfBirth, &employee.Gender, &employee.MaritalStatus, &employee.PhoneNumber, &employee.Email, &employee.Address, &employee.EmergencyContactName, &employee.EmergencyContactPhone, &employee.DepartmentID, &employee.PositionID, &employee.HireDate, &employee.EmploymentStatus, &employee.ManagerID, &employee.CreatedAt, &employee.UpdatedAt,
 	)
 
+	logger.WithFields(logrus.Fields{
+		"query":    query,
+		"duration": time.Since(startTime),
+	}).Debug("Executed GetEmployeeByID query")
+
 	if err != nil {
 		return nil, errors.New("employee not found")
 	}
@@ -63,7 +82,9 @@ func (r *repository) GetEmployeeByID(id uuid.UUID) (*models.Employee, error) {
 	return &employee, nil
 }
 
-func (r *repository) UpdateEmployee(id uuid.UUID, employeeData *models.EmployeeUpdate) (*models.Employee, error) {
+// UpdateEmployee updates an existing employee's information in the database
+func (r *repository) UpdateEmployee(logger *logrus.Entry, id uuid.UUID, employeeData *models.EmployeeUpdate) (*models.Employee, error) {
+	startTime := time.Now()
 	var employee models.Employee
 	query := `
 		UPDATE employees
@@ -77,6 +98,11 @@ func (r *repository) UpdateEmployee(id uuid.UUID, employeeData *models.EmployeeU
 		&employee.ID, &employee.UserID, &employee.EmployeeID, &employee.FirstName, &employee.LastName, &employee.DateOfBirth, &employee.Gender, &employee.MaritalStatus, &employee.PhoneNumber, &employee.Email, &employee.Address, &employee.EmergencyContactName, &employee.EmergencyContactPhone, &employee.DepartmentID, &employee.PositionID, &employee.HireDate, &employee.EmploymentStatus, &employee.ManagerID, &employee.CreatedAt, &employee.UpdatedAt,
 	)
 
+	logger.WithFields(logrus.Fields{
+		"query":    query,
+		"duration": time.Since(startTime),
+	}).Debug("Executed UpdateEmployee query")
+
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +110,17 @@ func (r *repository) UpdateEmployee(id uuid.UUID, employeeData *models.EmployeeU
 	return &employee, nil
 }
 
-func (r *repository) DeleteEmployee(id uuid.UUID) error {
-	result, err := r.db.Exec("DELETE FROM employees WHERE id = $1", id)
+// DeleteEmployee deletes an employee by their ID from the database
+func (r *repository) DeleteEmployee(logger *logrus.Entry, id uuid.UUID) error {
+	startTime := time.Now()
+	query := "DELETE FROM employees WHERE id = $1"
+	result, err := r.db.Exec(query, id)
+
+	logger.WithFields(logrus.Fields{
+		"query":    query,
+		"duration": time.Since(startTime),
+	}).Debug("Executed DeleteEmployee query")
+
 	if err != nil {
 		return err
 	}
@@ -102,13 +137,21 @@ func (r *repository) DeleteEmployee(id uuid.UUID) error {
 	return nil
 }
 
-func (r *repository) ListEmployees() ([]models.Employee, error) {
+// ListEmployees retrieves a list of all employees from the database
+func (r *repository) ListEmployees(logger *logrus.Entry) ([]models.Employee, error) {
+	startTime := time.Now()
 	var employees []models.Employee
 	query := `
 		SELECT id, user_id, employee_id, first_name, last_name, date_of_birth, gender, marital_status, phone_number, email, address, emergency_contact_name, emergency_contact_phone, department_id, position_id, hire_date, employment_status, manager_id, created_at, updated_at
 		FROM employees
 	`
 	rows, err := r.db.Query(query)
+
+	logger.WithFields(logrus.Fields{
+		"query":    query,
+		"duration": time.Since(startTime),
+	}).Debug("Executed ListEmployees query")
+
 	if err != nil {
 		return nil, err
 	}

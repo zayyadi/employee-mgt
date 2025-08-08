@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 // Handler handles HTTP requests for payroll
@@ -21,13 +22,16 @@ func NewHandler(service *Service) *Handler {
 // --- Salary Component Handlers ---
 
 func (h *Handler) CreateSalaryComponent(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	var input models.SalaryComponentCreate
 	if err := c.ShouldBindJSON(&input); err != nil {
+		logger.WithError(err).Warn("Failed to bind JSON for create salary component")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	comp, err := h.service.CreateSalaryComponent(&input)
+	comp, err := h.service.CreateSalaryComponent(logger, &input)
 	if err != nil {
+		logger.WithError(err).Error("Failed to create salary component")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create salary component"})
 		return
 	}
@@ -35,9 +39,11 @@ func (h *Handler) CreateSalaryComponent(c *gin.Context) {
 }
 
 func (h *Handler) GetSalaryComponent(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	id, _ := uuid.Parse(c.Param("id"))
-	comp, err := h.service.GetSalaryComponentByID(id)
+	comp, err := h.service.GetSalaryComponentByID(logger, id)
 	if err != nil {
+		logger.WithError(err).Error("Failed to get salary component")
 		c.JSON(http.StatusNotFound, gin.H{"error": "Salary component not found"})
 		return
 	}
@@ -45,8 +51,10 @@ func (h *Handler) GetSalaryComponent(c *gin.Context) {
 }
 
 func (h *Handler) ListSalaryComponents(c *gin.Context) {
-	comps, err := h.service.ListSalaryComponents()
+	logger := c.MustGet("logger").(*logrus.Entry)
+	comps, err := h.service.ListSalaryComponents(logger)
 	if err != nil {
+		logger.WithError(err).Error("Failed to list salary components")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list salary components"})
 		return
 	}
@@ -56,13 +64,16 @@ func (h *Handler) ListSalaryComponents(c *gin.Context) {
 // --- Employee Salary Handlers ---
 
 func (h *Handler) CreateEmployeeSalary(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	var input models.EmployeeSalaryCreate
 	if err := c.ShouldBindJSON(&input); err != nil {
+		logger.WithError(err).Warn("Failed to bind JSON for create employee salary")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	salary, err := h.service.CreateEmployeeSalary(&input)
+	salary, err := h.service.CreateEmployeeSalary(logger, &input)
 	if err != nil {
+		logger.WithError(err).Error("Failed to create employee salary")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create employee salary"})
 		return
 	}
@@ -70,9 +81,11 @@ func (h *Handler) CreateEmployeeSalary(c *gin.Context) {
 }
 
 func (h *Handler) GetEmployeeSalaries(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	employeeID, _ := uuid.Parse(c.Param("employeeId"))
-	salaries, err := h.service.GetEmployeeSalaries(employeeID)
+	salaries, err := h.service.GetEmployeeSalaries(logger, employeeID)
 	if err != nil {
+		logger.WithError(err).Error("Failed to get employee salaries")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get employee salaries"})
 		return
 	}
@@ -82,13 +95,16 @@ func (h *Handler) GetEmployeeSalaries(c *gin.Context) {
 // --- Tax Bracket Handlers ---
 
 func (h *Handler) CreateTaxBracket(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	var input models.TaxBracketCreate
 	if err := c.ShouldBindJSON(&input); err != nil {
+		logger.WithError(err).Warn("Failed to bind JSON for create tax bracket")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	bracket, err := h.service.CreateTaxBracket(&input)
+	bracket, err := h.service.CreateTaxBracket(logger, &input)
 	if err != nil {
+		logger.WithError(err).Error("Failed to create tax bracket")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create tax bracket"})
 		return
 	}
@@ -96,9 +112,11 @@ func (h *Handler) CreateTaxBracket(c *gin.Context) {
 }
 
 func (h *Handler) GetTaxBrackets(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	// In a real app, you'd get country and year from query params
-	brackets, err := h.service.GetTaxBrackets("USA", 2024)
+	brackets, err := h.service.GetTaxBrackets(logger, "USA", 2024)
 	if err != nil {
+		logger.WithError(err).Error("Failed to get tax brackets")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get tax brackets"})
 		return
 	}
@@ -108,13 +126,16 @@ func (h *Handler) GetTaxBrackets(c *gin.Context) {
 // --- Payroll Handlers ---
 
 func (h *Handler) CalculatePayroll(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	var input CalculatePayrollInput
 	if err := c.ShouldBindJSON(&input); err != nil {
+		logger.WithError(err).Warn("Failed to bind JSON for calculate payroll")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	payroll, err := h.service.CalculatePayroll(&input)
+	payroll, err := h.service.CalculatePayroll(logger, &input)
 	if err != nil {
+		logger.WithError(err).Error("Failed to calculate payroll")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to calculate payroll", "details": err.Error()})
 		return
 	}
@@ -122,8 +143,10 @@ func (h *Handler) CalculatePayroll(c *gin.Context) {
 }
 
 func (h *Handler) ListPayrolls(c *gin.Context) {
-	payrolls, err := h.service.ListPayrolls()
+	logger := c.MustGet("logger").(*logrus.Entry)
+	payrolls, err := h.service.ListPayrolls(logger)
 	if err != nil {
+		logger.WithError(err).Error("Failed to list payrolls")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list payrolls"})
 		return
 	}
@@ -131,15 +154,18 @@ func (h *Handler) ListPayrolls(c *gin.Context) {
 }
 
 func (h *Handler) GetPayroll(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	id, _ := uuid.Parse(c.Param("id"))
-	payroll, err := h.service.GetPayrollByID(id)
+	payroll, err := h.service.GetPayrollByID(logger, id)
 	if err != nil {
+		logger.WithError(err).Error("Failed to get payroll")
 		c.JSON(http.StatusNotFound, gin.H{"error": "Payroll not found"})
 		return
 	}
 
-	details, err := h.service.GetPayrollDetails(id)
+	details, err := h.service.GetPayrollDetails(logger, id)
 	if err != nil {
+		logger.WithError(err).Error("Failed to get payroll details")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get payroll details"})
 		return
 	}
@@ -151,9 +177,11 @@ func (h *Handler) GetPayroll(c *gin.Context) {
 }
 
 func (h *Handler) ApprovePayroll(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	id, _ := uuid.Parse(c.Param("id"))
-	payroll, err := h.service.ApprovePayroll(id)
+	payroll, err := h.service.ApprovePayroll(logger, id)
 	if err != nil {
+		logger.WithError(err).Error("Failed to approve payroll")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to approve payroll", "details": err.Error()})
 		return
 	}
@@ -161,9 +189,11 @@ func (h *Handler) ApprovePayroll(c *gin.Context) {
 }
 
 func (h *Handler) ProcessPayroll(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	id, _ := uuid.Parse(c.Param("id"))
-	payroll, err := h.service.ProcessPayroll(id)
+	payroll, err := h.service.ProcessPayroll(logger, id)
 	if err != nil {
+		logger.WithError(err).Error("Failed to process payroll")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process payroll", "details": err.Error()})
 		return
 	}
@@ -173,9 +203,11 @@ func (h *Handler) ProcessPayroll(c *gin.Context) {
 // --- Payslip Handlers ---
 
 func (h *Handler) GetPayslip(c *gin.Context) {
+	logger := c.MustGet("logger").(*logrus.Entry)
 	id, _ := uuid.Parse(c.Param("id"))
-	payslip, err := h.service.GetPayslip(id)
+	payslip, err := h.service.GetPayslip(logger, id)
 	if err != nil {
+		logger.WithError(err).Error("Failed to get payslip")
 		c.JSON(http.StatusNotFound, gin.H{"error": "Payslip not found"})
 		return
 	}
