@@ -1,6 +1,7 @@
 package attendance
 
 import (
+	"database/sql"
 	"employee-management/internal/database"
 	"employee-management/internal/models"
 	"errors"
@@ -24,6 +25,7 @@ func NewService(db *database.DB) *Service {
 // CreateAttendance creates a new attendance record
 func (s *Service) CreateAttendance(attendanceData *models.AttendanceCreate) (*models.Attendance, error) {
 	var attendance models.Attendance
+	var checkOutTime sql.NullTime
 	query := `
 		INSERT INTO attendance (employee_id, check_in_time, date, status, notes)
 		VALUES ($1, $2, $3, $4, $5)
@@ -32,11 +34,18 @@ func (s *Service) CreateAttendance(attendanceData *models.AttendanceCreate) (*mo
 	err := s.db.QueryRow(query,
 		attendanceData.EmployeeID, attendanceData.CheckInTime, attendanceData.Date, attendanceData.Status, attendanceData.Notes,
 	).Scan(
-		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &attendance.CheckOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
+		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &checkOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
 	)
 
 	if err != nil {
 		return nil, err
+	}
+	
+	// Convert sql.NullTime to *time.Time
+	if checkOutTime.Valid {
+		attendance.CheckOutTime = &checkOutTime.Time
+	} else {
+		attendance.CheckOutTime = nil
 	}
 
 	return &attendance, nil
@@ -45,16 +54,24 @@ func (s *Service) CreateAttendance(attendanceData *models.AttendanceCreate) (*mo
 // GetAttendanceByID retrieves an attendance record by its ID
 func (s *Service) GetAttendanceByID(id uuid.UUID) (*models.Attendance, error) {
 	var attendance models.Attendance
+	var checkOutTime sql.NullTime
 	query := `
 		SELECT id, employee_id, check_in_time, check_out_time, date, status, notes, created_at
 		FROM attendance WHERE id = $1
 	`
 	err := s.db.QueryRow(query, id).Scan(
-		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &attendance.CheckOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
+		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &checkOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
 	)
 
 	if err != nil {
 		return nil, errors.New("attendance record not found")
+	}
+	
+	// Convert sql.NullTime to *time.Time
+	if checkOutTime.Valid {
+		attendance.CheckOutTime = &checkOutTime.Time
+	} else {
+		attendance.CheckOutTime = nil
 	}
 
 	return &attendance, nil
@@ -63,6 +80,7 @@ func (s *Service) GetAttendanceByID(id uuid.UUID) (*models.Attendance, error) {
 // UpdateAttendance updates an existing attendance record
 func (s *Service) UpdateAttendance(id uuid.UUID, attendanceData *models.AttendanceUpdate) (*models.Attendance, error) {
 	var attendance models.Attendance
+	var checkOutTime sql.NullTime
 	query := `
 		UPDATE attendance
 		SET check_out_time = $1, status = $2, notes = $3
@@ -72,11 +90,18 @@ func (s *Service) UpdateAttendance(id uuid.UUID, attendanceData *models.Attendan
 	err := s.db.QueryRow(query,
 		attendanceData.CheckOutTime, attendanceData.Status, attendanceData.Notes, id,
 	).Scan(
-		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &attendance.CheckOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
+		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &checkOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
 	)
 
 	if err != nil {
 		return nil, err
+	}
+	
+	// Convert sql.NullTime to *time.Time
+	if checkOutTime.Valid {
+		attendance.CheckOutTime = &checkOutTime.Time
+	} else {
+		attendance.CheckOutTime = nil
 	}
 
 	return &attendance, nil
@@ -115,15 +140,24 @@ func (s *Service) ListAttendance() ([]models.Attendance, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var attendance models.Attendance
-		err := rows.Scan(
-			&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &attendance.CheckOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
+			var attendance models.Attendance
+			var checkOutTime sql.NullTime
+			err := rows.Scan(
+				&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &checkOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
+			)
+			if err != nil {
+				return nil, err
+			}
+			
+			// Convert sql.NullTime to *time.Time
+			if checkOutTime.Valid {
+				attendance.CheckOutTime = &checkOutTime.Time
+			} else {
+				attendance.CheckOutTime = nil
+			}
+			
+			attendances = append(attendances, attendance)
 		}
-		attendances = append(attendances, attendance)
-	}
 
 	return attendances, nil
 }
@@ -132,6 +166,7 @@ func (s *Service) ListAttendance() ([]models.Attendance, error) {
 func (s *Service) CheckIn(employeeID uuid.UUID) (*models.Attendance, error) {
 	// Check if employee already has a check-in for today
 	var existingAttendance models.Attendance
+	var existingCheckOutTime sql.NullTime
 	query := `
 		SELECT id, employee_id, check_in_time, check_out_time, date, status, notes, created_at
 		FROM attendance 
@@ -139,16 +174,23 @@ func (s *Service) CheckIn(employeeID uuid.UUID) (*models.Attendance, error) {
 	`
 	today := time.Now().Truncate(24 * time.Hour)
 	err := s.db.QueryRow(query, employeeID, today).Scan(
-		&existingAttendance.ID, &existingAttendance.EmployeeID, &existingAttendance.CheckInTime, &existingAttendance.CheckOutTime, &existingAttendance.Date, &existingAttendance.Status, &existingAttendance.Notes, &existingAttendance.CreatedAt,
+		&existingAttendance.ID, &existingAttendance.EmployeeID, &existingAttendance.CheckInTime, &existingCheckOutTime, &existingAttendance.Date, &existingAttendance.Status, &existingAttendance.Notes, &existingAttendance.CreatedAt,
 	)
 
 	// If there's already a check-in for today, return an error
 	if err == nil {
+		// Convert sql.NullTime to *time.Time
+		if existingCheckOutTime.Valid {
+			existingAttendance.CheckOutTime = &existingCheckOutTime.Time
+		} else {
+			existingAttendance.CheckOutTime = nil
+		}
 		return nil, errors.New("employee already checked in today")
 	}
 
 	// Create a new attendance record
 	var attendance models.Attendance
+	var checkOutTime sql.NullTime
 	query = `
 		INSERT INTO attendance (employee_id, check_in_time, date, status)
 		VALUES ($1, $2, $3, $4)
@@ -161,11 +203,18 @@ func (s *Service) CheckIn(employeeID uuid.UUID) (*models.Attendance, error) {
 	}
 
 	err = s.db.QueryRow(query, employeeID, checkInTime, today, status).Scan(
-		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &attendance.CheckOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
+		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &checkOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
 	)
 
 	if err != nil {
 		return nil, err
+	}
+	
+	// Convert sql.NullTime to *time.Time
+	if checkOutTime.Valid {
+		attendance.CheckOutTime = &checkOutTime.Time
+	} else {
+		attendance.CheckOutTime = nil
 	}
 
 	return &attendance, nil
@@ -175,6 +224,7 @@ func (s *Service) CheckIn(employeeID uuid.UUID) (*models.Attendance, error) {
 func (s *Service) CheckOut(employeeID uuid.UUID) (*models.Attendance, error) {
 	// Find the attendance record for today where check_out_time is NULL
 	var attendance models.Attendance
+	var checkOutTimeNull sql.NullTime
 	query := `
 		SELECT id, employee_id, check_in_time, check_out_time, date, status, notes, created_at
 		FROM attendance 
@@ -182,15 +232,23 @@ func (s *Service) CheckOut(employeeID uuid.UUID) (*models.Attendance, error) {
 	`
 	today := time.Now().Truncate(24 * time.Hour)
 	err := s.db.QueryRow(query, employeeID, today).Scan(
-		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &attendance.CheckOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
+		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &checkOutTimeNull, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
 	)
 
 	if err != nil {
 		return nil, errors.New("no check-in record found for today")
 	}
+	
+	// Convert sql.NullTime to *time.Time
+	if checkOutTimeNull.Valid {
+		attendance.CheckOutTime = &checkOutTimeNull.Time
+	} else {
+		attendance.CheckOutTime = nil
+	}
 
 	// Update the attendance record with check-out time
 	checkOutTime := time.Now()
+	var updatedCheckOutTime sql.NullTime
 	query = `
 		UPDATE attendance
 		SET check_out_time = $1
@@ -198,11 +256,18 @@ func (s *Service) CheckOut(employeeID uuid.UUID) (*models.Attendance, error) {
 		RETURNING id, employee_id, check_in_time, check_out_time, date, status, notes, created_at
 	`
 	err = s.db.QueryRow(query, checkOutTime, attendance.ID).Scan(
-		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &attendance.CheckOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
+		&attendance.ID, &attendance.EmployeeID, &attendance.CheckInTime, &updatedCheckOutTime, &attendance.Date, &attendance.Status, &attendance.Notes, &attendance.CreatedAt,
 	)
 
 	if err != nil {
 		return nil, err
+	}
+	
+	// Convert sql.NullTime to *time.Time
+	if updatedCheckOutTime.Valid {
+		attendance.CheckOutTime = &updatedCheckOutTime.Time
+	} else {
+		attendance.CheckOutTime = nil
 	}
 
 	return &attendance, nil

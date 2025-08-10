@@ -4,31 +4,21 @@ import (
 	"employee-management/internal/database"
 	"employee-management/internal/logging"
 	"employee-management/internal/server"
-)
+	"log"
+	"os"
 
-// @title Employee Management System API
-// @version 1.0
-// @description This is an employee management system with payroll functionality.
-// @termsOfService http://swagger.io/terms/
+	"github.com/joho/godotenv"
 
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name MIT
-// @license.url https://github.com/your-repo/license
-
-// @host localhost:8080
-// @BasePath /api/v1
-
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
+
 	// Initialize logger
 	logger := logging.InitLogger()
+
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+
 
 	// Initialize database connection
 	db, err := database.Initialize()
@@ -42,4 +32,11 @@ func main() {
 	if err := srv.Run(); err != nil {
 		logger.WithError(err).Fatal("Failed to start server")
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

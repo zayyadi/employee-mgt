@@ -1,0 +1,22 @@
+-- Drop indexes
+DROP INDEX IF EXISTS idx_employees_user_id;
+DROP INDEX IF EXISTS idx_employees_department_id;
+DROP INDEX IF EXISTS idx_employees_position_id;
+DROP INDEX IF EXISTS idx_employees_manager_id;
+DROP INDEX IF EXISTS idx_attendance_employee_id;
+DROP INDEX IF EXISTS idx_attendance_date;
+DROP INDEX IF EXISTS idx_leave_requests_employee_id;
+DROP INDEX IF EXISTS idx_leave_requests_leave_type_id;
+DROP INDEX IF EXISTS idx_leave_requests_status;
+DROP INDEX IF EXISTS idx_employee_salaries_employee_id;
+DROP INDEX IF EXISTS idx_employee_salaries_salary_component_id;
+DROP INDEX IF EXISTS idx_tax_brackets_country;
+DROP INDEX IF EXISTS idx_tax_brackets_tax_year;
+DROP INDEX IF EXISTS idx_payroll_details_payroll_id;
+DROP INDEX IF EXISTS idx_payroll_details_employee_id;
+DROP INDEX IF EXISTS idx_payslips_employee_id;
+DROP INDEX IF EXISTS idx_payslips_payroll_id;
+DROP INDEX IF EXISTS idx_notifications_user_id;
+DROP INDEX IF EXISTS idx_documents_employee_id;
+DROP INDEX IF EXISTS idx_performance_reviews_employee_id;
+DROP INDEX IF EXISTS idx_performance_reviews_reviewer_id;

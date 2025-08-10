@@ -17,6 +17,13 @@ build:
 run:
 	go run ${MAIN_FILE}
 
+# Run the application and open web dashboard
+.PHONY: run-web
+run-web:
+	go run ${MAIN_FILE} &
+	@echo "Server started at http://localhost:8080"
+	@echo "Web dashboard available at http://localhost:8080/web/login.html"
+
 # Install dependencies
 .PHONY: deps
 deps:
@@ -76,12 +83,12 @@ docker-logs:
 # Run database migrations
 .PHONY: migrate-up
 migrate-up:
-	# Add migration command here when migrations are implemented
+	go run cmd/migrate/main.go up
 
 # Run database rollback
 .PHONY: migrate-down
 migrate-down:
-	# Add rollback command here when migrations are implemented
+	go run cmd/migrate/main.go down
 
 # Generate Swagger documentation
 .PHONY: swagger
@@ -94,6 +101,7 @@ help:
 	@echo "Available commands:"
 	@echo "  make build        - Build the application"
 	@echo "  make run          - Run the application"
+	@echo "  make run-web      - Run the application and show web dashboard URL"
 	@echo "  make deps         - Install dependencies"
 	@echo "  make test         - Run tests"
 	@echo "  make test-coverage- Run tests with coverage"
