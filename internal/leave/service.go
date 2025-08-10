@@ -7,16 +7,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// Service handles leave-related operations
 type Service struct {
 	repo Repository
 }
 
+// NewService creates a new leave service
 func NewService(repo Repository) *Service {
 	return &Service{
 		repo: repo,
 	}
 }
 
+// Leave Type services
 func (s *Service) CreateLeaveType(leaveTypeData *models.LeaveTypeCreate) (*models.LeaveType, error) {
 	return s.repo.CreateLeaveType(leaveTypeData)
 }
@@ -37,8 +40,10 @@ func (s *Service) DeleteLeaveType(id uuid.UUID) error {
 	return s.repo.DeleteLeaveType(id)
 }
 
+// Leave Request services
 func (s *Service) CreateLeaveRequest(leaveRequestData *models.LeaveRequestCreate) (*models.LeaveRequest, error) {
-
+	// Business logic: check if leave type exists, if employee has enough balance etc.
+	// For now, we'll keep it simple.
 	return s.repo.CreateLeaveRequest(leaveRequestData)
 }
 
