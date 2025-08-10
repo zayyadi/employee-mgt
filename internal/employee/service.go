@@ -4,36 +4,47 @@ import (
 	"employee-management/internal/models"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
+// Service handles employee-related operations
 type Service struct {
 	repo Repository
 }
 
+// NewService creates a new employee service
 func NewService(repo Repository) *Service {
 	return &Service{
 		repo: repo,
 	}
 }
 
-func (s *Service) CreateEmployee(employeeData *models.EmployeeCreate) (*models.Employee, error) {
-
-	return s.repo.CreateEmployee(employeeData)
+// CreateEmployee creates a new employee
+func (s *Service) CreateEmployee(logger *logrus.Entry, employeeData *models.EmployeeCreate) (*models.Employee, error) {
+	logger.Info("Creating a new employee")
+	return s.repo.CreateEmployee(logger, employeeData)
 }
 
-func (s *Service) GetEmployeeByID(id uuid.UUID) (*models.Employee, error) {
-	return s.repo.GetEmployeeByID(id)
+// GetEmployeeByID retrieves an employee by their ID
+func (s *Service) GetEmployeeByID(logger *logrus.Entry, id uuid.UUID) (*models.Employee, error) {
+	logger.WithField("employeeID", id).Info("Getting employee by ID")
+	return s.repo.GetEmployeeByID(logger, id)
 }
 
-func (s *Service) UpdateEmployee(id uuid.UUID, employeeData *models.EmployeeUpdate) (*models.Employee, error) {
-
-	return s.repo.UpdateEmployee(id, employeeData)
+// UpdateEmployee updates an existing employee's information
+func (s *Service) UpdateEmployee(logger *logrus.Entry, id uuid.UUID, employeeData *models.EmployeeUpdate) (*models.Employee, error) {
+	logger.WithField("employeeID", id).Info("Updating employee")
+	return s.repo.UpdateEmployee(logger, id, employeeData)
 }
 
-func (s *Service) DeleteEmployee(id uuid.UUID) error {
-	return s.repo.DeleteEmployee(id)
+// DeleteEmployee deletes an employee by their ID
+func (s *Service) DeleteEmployee(logger *logrus.Entry, id uuid.UUID) error {
+	logger.WithField("employeeID", id).Info("Deleting employee")
+	return s.repo.DeleteEmployee(logger, id)
 }
 
-func (s *Service) ListEmployees() ([]models.Employee, error) {
-	return s.repo.ListEmployees()
+// ListEmployees retrieves a list of all employees
+func (s *Service) ListEmployees(logger *logrus.Entry) ([]models.Employee, error) {
+	logger.Info("Listing all employees")
+	return s.repo.ListEmployees(logger)
 }

@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 // EmployeeService defines the interface for employee-related operations needed by the payroll service
 type EmployeeService interface {
-	ListEmployees() ([]models.Employee, error)
+	ListEmployees(logger *logrus.Entry) ([]models.Employee, error)
 }
 
 // Service handles payroll-related business logic
@@ -29,68 +30,68 @@ func NewService(repo Repository, employeeService EmployeeService) *Service {
 
 // --- Salary Component ---
 
-func (s *Service) CreateSalaryComponent(data *models.SalaryComponentCreate) (*models.SalaryComponent, error) {
-	return s.repo.CreateSalaryComponent(data)
+func (s *Service) CreateSalaryComponent(logger *logrus.Entry, data *models.SalaryComponentCreate) (*models.SalaryComponent, error) {
+	return s.repo.CreateSalaryComponent(logger, data)
 }
 
-func (s *Service) GetSalaryComponentByID(id uuid.UUID) (*models.SalaryComponent, error) {
-	return s.repo.GetSalaryComponentByID(id)
+func (s *Service) GetSalaryComponentByID(logger *logrus.Entry, id uuid.UUID) (*models.SalaryComponent, error) {
+	return s.repo.GetSalaryComponentByID(logger, id)
 }
 
-func (s *Service) ListSalaryComponents() ([]models.SalaryComponent, error) {
-	return s.repo.ListSalaryComponents()
+func (s *Service) ListSalaryComponents(logger *logrus.Entry) ([]models.SalaryComponent, error) {
+	return s.repo.ListSalaryComponents(logger)
 }
 
-func (s *Service) UpdateSalaryComponent(id uuid.UUID, data *models.SalaryComponentUpdate) (*models.SalaryComponent, error) {
-	return s.repo.UpdateSalaryComponent(id, data)
+func (s *Service) UpdateSalaryComponent(logger *logrus.Entry, id uuid.UUID, data *models.SalaryComponentUpdate) (*models.SalaryComponent, error) {
+	return s.repo.UpdateSalaryComponent(logger, id, data)
 }
 
-func (s *Service) DeleteSalaryComponent(id uuid.UUID) error {
-	return s.repo.DeleteSalaryComponent(id)
+func (s *Service) DeleteSalaryComponent(logger *logrus.Entry, id uuid.UUID) error {
+	return s.repo.DeleteSalaryComponent(logger, id)
 }
 
 // --- Employee Salary ---
 
-func (s *Service) CreateEmployeeSalary(data *models.EmployeeSalaryCreate) (*models.EmployeeSalary, error) {
-	return s.repo.CreateEmployeeSalary(data)
+func (s *Service) CreateEmployeeSalary(logger *logrus.Entry, data *models.EmployeeSalaryCreate) (*models.EmployeeSalary, error) {
+	return s.repo.CreateEmployeeSalary(logger, data)
 }
 
-func (s *Service) GetEmployeeSalaries(employeeID uuid.UUID) ([]models.EmployeeSalary, error) {
-	return s.repo.GetEmployeeSalariesByEmployeeID(employeeID)
+func (s *Service) GetEmployeeSalaries(logger *logrus.Entry, employeeID uuid.UUID) ([]models.EmployeeSalary, error) {
+	return s.repo.GetEmployeeSalariesByEmployeeID(logger, employeeID)
 }
 
-func (s *Service) GetEmployeeSalary(id uuid.UUID) (*models.EmployeeSalary, error) {
-	return s.repo.GetEmployeeSalary(id)
+func (s *Service) GetEmployeeSalary(logger *logrus.Entry, id uuid.UUID) (*models.EmployeeSalary, error) {
+	return s.repo.GetEmployeeSalary(logger, id)
 }
 
-func (s *Service) UpdateEmployeeSalary(id uuid.UUID, data *models.EmployeeSalaryUpdate) (*models.EmployeeSalary, error) {
-	return s.repo.UpdateEmployeeSalary(id, data)
+func (s *Service) UpdateEmployeeSalary(logger *logrus.Entry, id uuid.UUID, data *models.EmployeeSalaryUpdate) (*models.EmployeeSalary, error) {
+	return s.repo.UpdateEmployeeSalary(logger, id, data)
 }
 
-func (s *Service) DeleteEmployeeSalary(id uuid.UUID) error {
-	return s.repo.DeleteEmployeeSalary(id)
+func (s *Service) DeleteEmployeeSalary(logger *logrus.Entry, id uuid.UUID) error {
+	return s.repo.DeleteEmployeeSalary(logger, id)
 }
 
 // --- Tax Bracket ---
 
-func (s *Service) CreateTaxBracket(data *models.TaxBracketCreate) (*models.TaxBracket, error) {
-	return s.repo.CreateTaxBracket(data)
+func (s *Service) CreateTaxBracket(logger *logrus.Entry, data *models.TaxBracketCreate) (*models.TaxBracket, error) {
+	return s.repo.CreateTaxBracket(logger, data)
 }
 
-func (s *Service) GetTaxBracket(id uuid.UUID) (*models.TaxBracket, error) {
-	return s.repo.GetTaxBracketByID(id)
+func (s *Service) GetTaxBracket(logger *logrus.Entry, id uuid.UUID) (*models.TaxBracket, error) {
+	return s.repo.GetTaxBracketByID(logger, id)
 }
 
-func (s *Service) GetTaxBrackets(country string, year int) ([]models.TaxBracket, error) {
-	return s.repo.GetTaxBrackets(country, year)
+func (s *Service) GetTaxBrackets(logger *logrus.Entry, country string, year int) ([]models.TaxBracket, error) {
+	return s.repo.GetTaxBrackets(logger, country, year)
 }
 
-func (s *Service) UpdateTaxBracket(id uuid.UUID, data *models.TaxBracketUpdate) (*models.TaxBracket, error) {
-	return s.repo.UpdateTaxBracket(id, data)
+func (s *Service) UpdateTaxBracket(logger *logrus.Entry, id uuid.UUID, data *models.TaxBracketUpdate) (*models.TaxBracket, error) {
+	return s.repo.UpdateTaxBracket(logger, id, data)
 }
 
-func (s *Service) DeleteTaxBracket(id uuid.UUID) error {
-	return s.repo.DeleteTaxBracket(id)
+func (s *Service) DeleteTaxBracket(logger *logrus.Entry, id uuid.UUID) error {
+	return s.repo.DeleteTaxBracket(logger, id)
 }
 
 // --- Payroll Calculation ---
@@ -104,9 +105,9 @@ type CalculatePayrollInput struct {
 }
 
 // CalculatePayroll orchestrates the payroll calculation process
-func (s *Service) CalculatePayroll(input *CalculatePayrollInput) (*models.Payroll, error) {
+func (s *Service) CalculatePayroll(logger *logrus.Entry, input *CalculatePayrollInput) (*models.Payroll, error) {
 	// 1. Create a new payroll record
-	payroll, err := s.repo.CreatePayroll(&models.PayrollCreate{
+	payroll, err := s.repo.CreatePayroll(logger, &models.PayrollCreate{
 		PayPeriodStart: input.PayPeriodStart,
 		PayPeriodEnd:   input.PayPeriodEnd,
 		PaymentDate:    input.PaymentDate,
@@ -116,13 +117,13 @@ func (s *Service) CalculatePayroll(input *CalculatePayrollInput) (*models.Payrol
 	}
 
 	// 2. Get all employees
-	employees, err := s.employeeService.ListEmployees()
+	employees, err := s.employeeService.ListEmployees(logger)
 	if err != nil {
 		return nil, err
 	}
 
 	// 3. Get tax brackets for the given country and year
-	taxBrackets, err := s.repo.GetTaxBrackets(input.Country, input.PayPeriodStart.Year())
+	taxBrackets, err := s.repo.GetTaxBrackets(logger, input.Country, input.PayPeriodStart.Year())
 	if err != nil {
 		return nil, err
 	}
@@ -132,9 +133,9 @@ func (s *Service) CalculatePayroll(input *CalculatePayrollInput) (*models.Payrol
 	// 4. Iterate over each employee and calculate their payroll
 	for _, employee := range employees {
 		// Get employee's salary components
-		salaries, err := s.repo.GetEmployeeSalariesByEmployeeID(employee.ID)
+		salaries, err := s.repo.GetEmployeeSalariesByEmployeeID(logger, employee.ID)
 		if err != nil {
-			// Log error and continue with next employee, or handle as critical
+			logger.WithError(err).WithField("employeeID", employee.ID).Error("Failed to get employee salaries")
 			continue
 		}
 
@@ -142,7 +143,7 @@ func (s *Service) CalculatePayroll(input *CalculatePayrollInput) (*models.Payrol
 		var grossPay, deductions float64
 		var taxableEarnings float64
 		for _, salary := range salaries {
-			comp, err := s.repo.GetSalaryComponentByID(salary.SalaryComponentID)
+			comp, err := s.repo.GetSalaryComponentByID(logger, salary.SalaryComponentID)
 			if err != nil {
 				continue
 			}
@@ -162,7 +163,7 @@ func (s *Service) CalculatePayroll(input *CalculatePayrollInput) (*models.Payrol
 		netPay := grossPay - totalDeductionsForEmployee
 
 		// Create payroll detail record
-		_, err = s.repo.CreatePayrollDetail(&models.PayrollDetailCreate{
+		_, err = s.repo.CreatePayrollDetail(logger, &models.PayrollDetailCreate{
 			PayrollID:       payroll.ID,
 			EmployeeID:      employee.ID,
 			GrossPay:        grossPay,
@@ -171,7 +172,7 @@ func (s *Service) CalculatePayroll(input *CalculatePayrollInput) (*models.Payrol
 			NetPay:          netPay,
 		})
 		if err != nil {
-			// Log error and continue
+			logger.WithError(err).Error("Failed to create payroll detail")
 			continue
 		}
 
@@ -182,7 +183,7 @@ func (s *Service) CalculatePayroll(input *CalculatePayrollInput) (*models.Payrol
 	}
 
 	// 5. Update the main payroll record with the calculated totals
-	updatedPayroll, err := s.repo.UpdatePayroll(payroll.ID, &models.PayrollUpdate{
+	updatedPayroll, err := s.repo.UpdatePayroll(logger, payroll.ID, &models.PayrollUpdate{
 		Status:          "calculated",
 		TotalGrossPay:   totalGrossPay,
 		TotalDeductions: totalDeductions,
@@ -212,31 +213,31 @@ func (s *Service) calculateTax(taxableEarnings float64, brackets []models.TaxBra
 
 // --- Payroll Management ---
 
-func (s *Service) GetPayrollByID(id uuid.UUID) (*models.Payroll, error) {
-	return s.repo.GetPayrollByID(id)
+func (s *Service) GetPayrollByID(logger *logrus.Entry, id uuid.UUID) (*models.Payroll, error) {
+	return s.repo.GetPayrollByID(logger, id)
 }
 
-func (s *Service) ListPayrolls() ([]models.Payroll, error) {
-	return s.repo.ListPayrolls()
+func (s *Service) ListPayrolls(logger *logrus.Entry) ([]models.Payroll, error) {
+	return s.repo.ListPayrolls(logger)
 }
 
-func (s *Service) GetPayrollDetails(payrollID uuid.UUID) ([]models.PayrollDetail, error) {
-	return s.repo.GetPayrollDetailsByPayrollID(payrollID)
+func (s *Service) GetPayrollDetails(logger *logrus.Entry, payrollID uuid.UUID) ([]models.PayrollDetail, error) {
+	return s.repo.GetPayrollDetailsByPayrollID(logger, payrollID)
 }
 
-func (s *Service) ApprovePayroll(id uuid.UUID) (*models.Payroll, error) {
-	payroll, err := s.repo.GetPayrollByID(id)
+func (s *Service) ApprovePayroll(logger *logrus.Entry, id uuid.UUID) (*models.Payroll, error) {
+	payroll, err := s.repo.GetPayrollByID(logger, id)
 	if err != nil {
 		return nil, err
 	}
 	if payroll.Status != "calculated" {
 		return nil, errors.New("payroll must be in 'calculated' state to be approved")
 	}
-	return s.repo.UpdatePayroll(id, &models.PayrollUpdate{Status: "approved"})
+	return s.repo.UpdatePayroll(logger, id, &models.PayrollUpdate{Status: "approved"})
 }
 
-func (s *Service) ProcessPayroll(id uuid.UUID) (*models.Payroll, error) {
-	payroll, err := s.repo.GetPayrollByID(id)
+func (s *Service) ProcessPayroll(logger *logrus.Entry, id uuid.UUID) (*models.Payroll, error) {
+	payroll, err := s.repo.GetPayrollByID(logger, id)
 	if err != nil {
 		return nil, err
 	}
@@ -244,18 +245,14 @@ func (s *Service) ProcessPayroll(id uuid.UUID) (*models.Payroll, error) {
 		return nil, errors.New("payroll must be in 'approved' state to be processed")
 	}
 
-	// In a real app, this is where you would generate payslip files,
-	// send notifications, and integrate with a payment system.
-	// For now, we'll just create the payslip records in the database.
-
-	details, err := s.repo.GetPayrollDetailsByPayrollID(id)
+	details, err := s.repo.GetPayrollDetailsByPayrollID(logger, id)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, detail := range details {
 		// Create payslip
-		_, err := s.repo.CreatePayslip(&models.PayslipCreate{
+		_, err := s.repo.CreatePayslip(logger, &models.PayslipCreate{
 			EmployeeID:     detail.EmployeeID,
 			PayrollID:      payroll.ID,
 			PayPeriodStart: payroll.PayPeriodStart,
@@ -266,13 +263,13 @@ func (s *Service) ProcessPayroll(id uuid.UUID) (*models.Payroll, error) {
 			NetPay:         detail.NetPay,
 		})
 		if err != nil {
-			// Log and continue
+			logger.WithError(err).Error("Failed to create payslip")
 		}
 	}
 
-	return s.repo.UpdatePayroll(id, &models.PayrollUpdate{Status: "processed"})
+	return s.repo.UpdatePayroll(logger, id, &models.PayrollUpdate{Status: "processed"})
 }
 
-func (s *Service) GetPayslip(id uuid.UUID) (*models.Payslip, error) {
-	return s.repo.GetPayslip(id)
+func (s *Service) GetPayslip(logger *logrus.Entry, id uuid.UUID) (*models.Payslip, error) {
+	return s.repo.GetPayslip(logger, id)
 }
