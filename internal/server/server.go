@@ -42,6 +42,9 @@ func NewServer(db *database.DB) *Server {
 	// Create router
 	router := gin.New()
 
+	// Serve static web files
+	router.Static("/web", "./web")
+
 	// Add middlewares
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
