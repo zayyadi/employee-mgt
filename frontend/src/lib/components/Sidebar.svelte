@@ -15,6 +15,9 @@
       <Item href="/">
         <Text>Home</Text>
       </Item>
+      <Item href="/admin/employees">
+        <Text>Employees</Text>
+      </Item>
       <Item href="/auth/login">
         <Text>Login</Text>
       </Item>
