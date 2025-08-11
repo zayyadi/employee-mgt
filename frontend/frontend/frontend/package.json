@@ -9,10 +9,7 @@
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write .",
-		"test": "playwright test"
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.54.2",
@@ -35,14 +32,14 @@
 		"@smui/button": "^8.0.1",
 		"@smui/card": "^8.0.1",
 		"@smui/data-table": "^8.0.1",
+		"@smui/drawer": "^8.0.1",
+		"@smui/icon-button": "^8.0.1",
+		"@smui/list": "^8.0.1",
 		"@smui/textfield": "^8.0.1",
+		"@smui/top-app-bar": "^8.0.1",
 		"chart.js": "^4.5.0",
 		"sass": "^1.90.0",
 		"smui-theme": "^8.0.1",
-		"svelte-i18n": "^4.0.1",
-		"@smui/top-app-bar": "^8.0.1",
-		"@smui/icon-button": "^8.0.1",
-		"@smui/drawer": "^8.0.1",
-		"@smui/list": "^8.0.1"
+		"svelte-i18n": "^4.0.1"
 	}
 }

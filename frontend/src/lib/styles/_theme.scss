@@ -1,0 +1,13 @@
+@use '@smui/theme/index' with (
+  $primary: #0d6efd
+);
+
+// Import styles for components we will use
+@use '@smui/top-app-bar/style';
+@use '@smui/icon-button/style';
+@use '@smui/drawer/style';
+@use '@smui/list/style';
+@use '@smui/button/style';
+@use '@smui/card/style';
+@use '@smui/textfield/style';
+@use '@smui/data-table/style';
